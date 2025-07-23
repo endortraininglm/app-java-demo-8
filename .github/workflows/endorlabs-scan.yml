@@ -1,0 +1,55 @@
+name: Endor Labs Dependency and Secrets Scan
+#on:
+#  push:
+#    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
+on:
+  push:
+    branches:
+      - setup_gha_scan
+jobs:
+  scan:
+    permissions:
+      id-token: write
+      repository-projects: read
+      pull-requests: read
+      contents: read
+    name: endorctl-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Setup Java 8 for Build
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: maven
+      - name: Setup Maven 3.2.5
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.2.5
+      - name: Build Package with Java 8
+        run: mvn clean install
+      - name: Setup Java 11 for Endor Labs Scan
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          cache: maven
+      - name: Setup Maven 3.6.3 for Endor Labs Scan
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.6.3
+      - name: 'Endor Labs Scan Push to main'
+        if: ${{ github.event_name == 'push' }}
+        uses: endorlabs/github-action@v1
+        with:
+          namespace: 'leonardo-learn' # Replace with your Endor Labs tenant namespace
+          enable_github_action_token: true
+          scan_dependencies: true
+          scan_secrets: true
+          pr: false
+          log_level: debug
+          log_verbose: true
