@@ -15,6 +15,14 @@
     </properties>
 
     <dependencies>
+        <!-- Lombok for code generation -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.16</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Log4j with known vulnerabilities (CVE-2021-44228) -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
