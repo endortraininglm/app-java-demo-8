@@ -30,7 +30,7 @@ class User {
 }
 
 public class App extends ActionSupport {
-    // Bump 1
+    // Bump 2
     private static final Logger logger = LogManager.getLogger(App.class);
 
     public static void main(String[] args) {
