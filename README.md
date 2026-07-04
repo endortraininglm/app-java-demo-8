@@ -48,3 +48,5 @@ java -jar target/app-java-demo-8-1.0-SNAPSHOT.jar
 ## Disclaimer
 
 This project is for educational and testing purposes only. It intentionally contains security vulnerabilities and should not be used in a production environment.
+
+<!-- feature branch test commit for Point 1 validation -->
