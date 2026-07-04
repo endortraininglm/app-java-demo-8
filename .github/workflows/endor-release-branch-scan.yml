@@ -1,0 +1,74 @@
+# =============================================================================
+# REUSABLE WORKFLOW — Point 1 — Scan Release Branch on Create/Push
+# =============================================================================
+# Adapted from the ACA proposal draft
+# (shared/endor-release-branch-scan.yml) for local validation in this repo.
+# Uses the keyless github_action_token auth pattern already proven on the
+# setup_gha_scan branch (namespace: leonardo-learn).
+#
+# Purpose:
+#   When a release branch is created or pushed, run an Endor scan
+#   (dependencies + secrets) against the leonardo-learn namespace. This is
+#   the trigger validation for ACA's Point 1 architecture.
+# =============================================================================
+
+name: Endor - Release Branch Scan (Point 1)
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Endor Labs namespace.'
+        required: false
+        type: string
+        default: 'leonardo-learn'
+      project_name:
+        description: 'Endor project name. Defaults to the calling repository.'
+        required: false
+        type: string
+        default: ''
+      scan_sast:
+        description: 'Enable SAST scanning.'
+        required: false
+        type: boolean
+        default: false
+      scan_secrets:
+        description: 'Enable secrets scanning.'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  release-branch-scan:
+    name: Endor release branch scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # Keyless auth to Endor via GitHub Action token
+
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for diff vs. master baseline.
+
+      - name: Endor scan (establishes release-branch baseline)
+        uses: endorlabs/github-action@v1
+        with:
+          namespace: ${{ inputs.namespace }}
+          enable_github_action_token: true
+
+          # pr: false -> creates a tracked monitored version for this
+          # release branch.
+          pr: false
+
+          scan_dependencies: true
+          scan_secrets: ${{ inputs.scan_secrets }}
+          scan_sast: ${{ inputs.scan_sast }}
+
+          project_name: ${{ inputs.project_name }}
+
+          tags: |
+            ci=github-actions
+            point=1-release-branch-baseline
+            release-branch=${{ github.ref_name }}

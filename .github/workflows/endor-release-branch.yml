@@ -1,0 +1,45 @@
+# =============================================================================
+# CALLER — Point 1 — Scan Release Branch
+# =============================================================================
+# Adapted from the ACA proposal draft
+# (caller-examples/endor-release-branch.yml) for local validation.
+# Trigger definitions, if-gating, and concurrency group are unchanged from
+# the original draft; only the `uses:` target differs (same-repo relative
+# ref instead of the external acacceptance/github-workflows-shared repo,
+# which doesn't exist here).
+# =============================================================================
+
+name: Endor - Release Branch Scan
+
+on:
+  push:
+    branches:
+      - 'release/*'
+      - 'release/**'
+  # NOTE: The `create` event does NOT support a `branches:` filter at the
+  # trigger level — it fires for every branch/tag creation. We filter via
+  # the job-level `if:` below to restrict to release branches only.
+  create:
+
+# Avoid duplicate scans: `git push -u origin release/2.x` fires BOTH
+# `create` and `push` events. The concurrency group serializes them by
+# branch ref so we run the scan once per branch.
+concurrency:
+  group: endor-release-branch-scan-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  scan:
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'create' &&
+       github.event.ref_type == 'branch' &&
+       startsWith(github.event.ref, 'release/'))
+    uses: ./.github/workflows/endor-release-branch-scan.yml
+    with:
+      scan_sast: false
+      scan_secrets: true
