@@ -53,6 +53,16 @@ jobs:
           fetch-depth: 0  # Required for diff vs. master baseline.
 
       - name: Endor scan (establishes release-branch baseline)
+        # continue-on-error is required here, not just omitting
+        # --exit-on-policy-warning: that flag only controls WARN-level
+        # policy violations. A namespace-level blocking Admission policy
+        # (finding severity, license, etc.) still makes endorctl exit
+        # non-zero even with pr:false and no policy-warning flag, which
+        # would otherwise fail this baseline-establishing job. Confirmed
+        # via a real leonardo-learn scan that hit exactly this case
+        # (Admission blocked by policy -> exit code 128) before this
+        # was added.
+        continue-on-error: true
         uses: endorlabs/github-action@v1
         with:
           namespace: ${{ inputs.namespace }}
