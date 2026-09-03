@@ -29,6 +29,10 @@ class User {
     private String email;
 }
 
+/**
+ * 1.1.43 :D bump 1
+ * App
+ */
 public class App extends ActionSupport {
     private static final Logger logger = LogManager.getLogger(App.class);
 
