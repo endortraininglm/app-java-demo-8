@@ -18,6 +18,7 @@ import java.util.HashMap;
 /**
  * Sample Java application with vulnerable dependencies
  * This application is intended for demonstration purposes only
+ * Simple text diff
  */
 // Lombok data class example
 @Data
