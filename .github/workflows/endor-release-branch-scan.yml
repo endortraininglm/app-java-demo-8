@@ -87,10 +87,9 @@ jobs:
       
       # later shell steps, so use its supported setup action.
       - name: Install endorctl
-        uses: endorlabs/github-action/setup@f46ffb04c928a9c9c356f9627bd60b710ed0963e # v1.1.13
+        uses: endorlabs/github-action/setup@v1
         with:
           namespace: ${{ inputs.namespace }}
-          endorctl_version: v1.7.1133
           enable_github_action_token: true
       
       - name: Allow release branch as a PR scan target
