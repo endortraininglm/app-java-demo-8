@@ -82,3 +82,78 @@ jobs:
             ci=github-actions
             point=1-release-branch-baseline
             release-branch=${{ github.ref_name }}
+      
+            # The scan action does not guarantee endorctl remains available to
+      
+      # later shell steps, so use its supported setup action.
+      - name: Install endorctl
+        uses: endorlabs/github-action/setup@f46ffb04c928a9c9c356f9627bd60b710ed0963e # v1.1.13
+        with:
+          namespace: ${{ inputs.namespace }}
+          endorctl_version: v1.7.1133
+          enable_github_action_token: true
+      
+      - name: Allow release branch as a PR scan target
+        env:
+          ENDOR_NAMESPACE: ${{ inputs.namespace }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}.git
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT_UUID=$(
+            endorctl api get \
+              -r Project \
+              -n "$ENDOR_NAMESPACE" \
+              --name "$REPOSITORY_URL" \
+            | jq -er '.uuid'
+          )
+          mapfile -t REPOSITORY_VERSIONS < <(
+            endorctl api list \
+              -r RepositoryVersion \
+              -n "$ENDOR_NAMESPACE" \
+              --filter "meta.parent_uuid==$PROJECT_UUID" \
+              --field-mask \
+                "uuid,context.type,spec.version.ref,spec.allow_ref_as_pr_scan_base,scan_object.status" \
+              --list-all \
+              --timeout 120s \
+            | jq -c \
+                --arg ref "$BRANCH_NAME" \
+                '.list.objects[]
+                 | select(
+                     .context.type == "CONTEXT_TYPE_REF"
+                     and .spec.version.ref == $ref
+                   )'
+          )
+          if [[ ${#REPOSITORY_VERSIONS[@]} -ne 1 ]]; then
+            echo "Expected one REF RepositoryVersion for $BRANCH_NAME; found ${#REPOSITORY_VERSIONS[@]}."
+            exit 1
+          fi
+          REPOSITORY_VERSION="${REPOSITORY_VERSIONS[0]}"
+          REPOSITORY_VERSION_UUID=$(jq -r '.uuid' <<<"$REPOSITORY_VERSION")
+          SCAN_STATUS=$(jq -r '.scan_object.status' <<<"$REPOSITORY_VERSION")
+          ALREADY_ENABLED=$(
+            jq -r '.spec.allow_ref_as_pr_scan_base // false' \
+              <<<"$REPOSITORY_VERSION"
+          )
+          if [[ "$SCAN_STATUS" != "STATUS_SCANNED" ]]; then
+            echo "RepositoryVersion is not scanned: $SCAN_STATUS"
+            exit 1
+          fi
+          if [[ "$ALREADY_ENABLED" == "true" ]]; then
+            echo "$BRANCH_NAME is already enabled as a PR scan target."
+            exit 0
+          fi
+          endorctl api update \
+            -r RepositoryVersion \
+            -n "$ENDOR_NAMESPACE" \
+            --uuid "$REPOSITORY_VERSION_UUID" \
+            --field-mask "spec.allow_ref_as_pr_scan_base" \
+            --data '{"spec":{"allow_ref_as_pr_scan_base":true}}'
+          endorctl api get \
+            -r RepositoryVersion \
+            -n "$ENDOR_NAMESPACE" \
+            --uuid "$REPOSITORY_VERSION_UUID" \
+            --field-mask "spec.allow_ref_as_pr_scan_base" \
+          | jq -e '.spec.allow_ref_as_pr_scan_base == true'
+          echo "$BRANCH_NAME is enabled as a PR scan target."
