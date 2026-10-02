@@ -1,0 +1,8 @@
+version: 1.0.0
+ignore:
+  - id: endorignore-1
+    username: lmoreno@endor.ai@google@api-key
+    update_time: 2026-10-02 13:32:17 UTC
+    vuln_id: GHSA-rfx6-vp9g-rh7v
+    reason: risk-accepted
+    comments: This is a minor issue, should not block merge see xyz
